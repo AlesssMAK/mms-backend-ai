@@ -1,0 +1,182 @@
+import createHttpError from 'http-errors';
+import { Fault } from '../models/fault.js';
+import { Plant } from '../models/plant.js';
+import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
+import mongoose from 'mongoose';
+import { PlantPart } from '../models/part.js';
+
+export const createFault = async (req, res) => {
+  const {
+    faultId,
+    dataCreated,
+    timeCreated,
+    plantId,
+    partId,
+    typeFault,
+    comment,
+  } = req.body;
+
+  const existsId = await Fault.findOne({ faultId });
+  if (existsId) {
+    throw createHttpError(409, 'This ID already exists');
+  }
+
+  const userId = req.user?._id;
+
+  if (!userId) {
+    throw createHttpError(401, 'User is not authenticated');
+  }
+
+  const plant = await Plant.findById(plantId);
+  if (!plant) {
+    throw createHttpError(400, 'Plant not found');
+  }
+
+  const part = await PlantPart.findById(partId);
+  if (!part) {
+    throw createHttpError(400, 'Part of plant not found');
+  }
+
+  if (String(part.plantId) !== String(plantId)) {
+    throw createHttpError(400, 'This part does not belong to this plant');
+  }
+
+  let imageUrls = [];
+
+  if (req.files && req.files.length > 0) {
+    for (const file of req.files) {
+      const cloudinaryResult = await saveFileToCloudinary(
+        file.buffer,
+        'faults',
+      );
+      imageUrls.push(cloudinaryResult.secure_url);
+    }
+  }
+
+  const newFault = await Fault.create({
+    faultId,
+    userId,
+    nameOperator: req.user?.fullName || 'Unknown Operator',
+    dataCreated,
+    timeCreated,
+    plantId,
+    partId,
+    typeFault,
+    comment,
+    img: imageUrls,
+    history: [
+      {
+        action: 'created',
+        userId: userId,
+        userName: req.user?.name || 'Operator',
+        timestamp: new Date(),
+      },
+    ],
+  });
+
+  const populatedFault = await Fault.findById(newFault._id)
+    .populate({ path: 'plantId', select: 'namePlant code' })
+    .populate({ path: 'partId', select: 'namePlantPart codePlantPart' });
+
+  await mongoose.connection
+    .collection('original_faults')
+    .insertOne(newFault.toObject());
+
+  return res.status(201).json(populatedFault);
+};
+
+export const getAllFault = async (req, res) => {
+  const {
+    faultId,
+    nameOperator,
+    priority,
+    plant,
+    plantPart,
+    typeFault,
+    dataCreated,
+    timeCreated,
+    deadline,
+    sort = 'desc',
+    sortBy = 'dataCreated',
+    sortOrder = 'asc',
+    page = 1,
+    perPage = 2,
+  } = req.query;
+
+  const query = {};
+
+  console.log('priority is:');
+  console.log(priority);
+
+  //фільтрація
+  if (deadline) query.deadline = deadline;
+  if (priority) query.priority = priority;
+  if (faultId) query.faultId = faultId;
+  if (nameOperator) query.nameOperator = nameOperator;
+  if (typeFault) query.typeFault = typeFault;
+  if (dataCreated) query.dataCreated = dataCreated;
+  if (timeCreated) query.timeCreated = timeCreated;
+
+  if (plant) {
+    const plants = await Plant.find({
+      $or: [
+        { namePlant: new RegExp(plant, 'i') },
+        { code: new RegExp(plant, 'i') },
+      ],
+    });
+
+    const plantIds = plants.map((p) => p._id);
+    query.plantId = { $in: plantIds };
+  }
+
+  if (plantPart) {
+    const parts = await PlantPart.find({
+      $or: [
+        { namePlantPart: new RegExp(plantPart, 'i') },
+        { codePlantPart: new RegExp(plantPart, 'i') },
+      ],
+    });
+
+    const partIds = parts.map((p) => p._id);
+    query.partId = { $in: partIds };
+  }
+
+  const sortOption = sort === 'asc' ? 1 : -1;
+  const skip = (page - 1) * perPage;
+
+  const [totalFault, fault] = await Promise.all([
+    Fault.countDocuments(query),
+    Fault.find(query)
+      .populate({ path: 'plantId', select: 'namePlant code' })
+      .populate({ path: 'partId', select: 'namePlantPart codePlantPart' })
+      .sort({ createdAt: sortOption })
+      .skip(skip)
+      .limit(perPage)
+      .sort({ [sortBy]: sortOrder })
+      .lean(),
+  ]);
+
+  const totalPage = Math.ceil(totalFault / perPage);
+
+  res.status(200).json({
+    page,
+    perPage,
+    totalFault,
+    totalPage,
+    fault,
+  });
+};
+
+export const getFaultById = async (req, res) => {
+  const { faultId } = req.params;
+
+  const fault = await Fault.findById(faultId)
+    .populate({ path: 'plantId', select: 'namePlant code' })
+    .populate({ path: 'partId', select: 'namePlantPart codePlantPart' });
+
+  if (!fault) {
+    throw createHttpError(404, 'Fault not found');
+  }
+
+  res.status(200).json(fault);
+};
