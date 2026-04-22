@@ -1,6 +1,7 @@
 import createHttpError from 'http-errors';
 import { Comment } from '../models/comment.js';
 import { Fault } from '../models/fault.js';
+import { emitCommentCreated } from '../socket/emitters.js';
 
 export const createComment = async (req, res) => {
   const { faultId } = req.params;
@@ -22,6 +23,8 @@ export const createComment = async (req, res) => {
     path: 'authorId',
     select: 'name lastname role',
   });
+
+  emitCommentCreated(populated);
 
   return res.status(201).json(populated);
 };
