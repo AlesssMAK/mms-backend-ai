@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import http from 'node:http';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -23,6 +24,7 @@ import auditLogRoutes from './routes/auditLogRoutes.js';
 import { authenticate } from './middleware/authenticate.js';
 import { ensureSingleton as ensureSystemSettings } from './services/systemSettings.js';
 import { ensureTtlIndex as ensureAuditTtlIndex } from './services/auditLog.js';
+import { initSocket } from './socket/index.js';
 import AdminJS from 'adminjs';
 import AdminJSExpress from '@adminjs/express';
 import { adminOptions } from './admin/admin.config.js';
@@ -110,6 +112,9 @@ await connectMongoDB();
 await ensureSystemSettings();
 await ensureAuditTtlIndex();
 
-app.listen(PORT, () => {
+const httpServer = http.createServer(app);
+initSocket(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
