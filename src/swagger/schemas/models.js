@@ -245,10 +245,9 @@
  *           description: ObjectId заявки
  *           example: "65c12f8a9e1b2c0012a3b456"
  *         authorId:
- *           oneOf:
- *             - type: string
- *             - type: object
- *           description: ID автора або populated-обʼєкт { _id, name, lastname, role }
+ *           type: string
+ *           description: ID автора (populated у відповіді до обʼєкта з полями _id, name, lastname, role)
+ *           example: "65c12f8a9e1b2c0012a3b111"
  *         authorRole:
  *           type: string
  *           enum: [admin, manager, maintenanceWorker, safety]
@@ -308,4 +307,127 @@
  *         data:
  *           type: object
  *           description: Additional error details
+ *
+ *     SystemSettingsPublic:
+ *       type: object
+ *       description: Публічні поля SystemSettings (потрібні всім ролям для слот-гріду/календаря)
+ *       properties:
+ *         _id:
+ *           type: string
+ *           example: global
+ *         workHours:
+ *           type: object
+ *           properties:
+ *             start:
+ *               type: string
+ *               pattern: '^([01]\\d|2[0-3]):([0-5]\\d)$'
+ *               example: "08:00"
+ *             end:
+ *               type: string
+ *               pattern: '^([01]\\d|2[0-3]):([0-5]\\d)$'
+ *               example: "17:00"
+ *         workDays:
+ *           type: array
+ *           description: Робочі дні тижня (0=нд..6=сб)
+ *           items:
+ *             type: integer
+ *             minimum: 0
+ *             maximum: 6
+ *           example: [1, 2, 3, 4, 5]
+ *         slotDurationMinutes:
+ *           type: integer
+ *           minimum: 5
+ *           maximum: 240
+ *           example: 30
+ *         holidays:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *
+ *     SystemSettings:
+ *       allOf:
+ *         - $ref: '#/components/schemas/SystemSettingsPublic'
+ *         - type: object
+ *           properties:
+ *             email:
+ *               type: object
+ *               properties:
+ *                 enabled:
+ *                   type: boolean
+ *                   example: true
+ *                 from:
+ *                   type: string
+ *                   format: email
+ *                   example: noreply@mms.local
+ *                 triggers:
+ *                   type: object
+ *                   properties:
+ *                     onAssignment: { type: boolean, example: true }
+ *                     onNewFault: { type: boolean, example: true }
+ *                     onSicurezzaHse: { type: boolean, example: true }
+ *                     onDirectMessage: { type: boolean, example: true }
+ *                 rateLimits:
+ *                   type: object
+ *                   properties:
+ *                     perRecipientPerHour:
+ *                       type: integer
+ *                       minimum: 0
+ *                       maximum: 1000
+ *                       example: 10
+ *             messaging:
+ *               type: object
+ *               properties:
+ *                 broadcastTtlDays:
+ *                   type: integer
+ *                   minimum: 1
+ *                   maximum: 365
+ *                   example: 30
+ *                 directRateLimitPerHour:
+ *                   type: integer
+ *                   minimum: 0
+ *                   maximum: 1000
+ *                   example: 30
+ *             retention:
+ *               type: object
+ *               properties:
+ *                 auditLogDays:
+ *                   type: integer
+ *                   minimum: 1
+ *                   maximum: 3650
+ *                   example: 90
+ *                 completedFaultsArchiveMonths:
+ *                   type: integer
+ *                   nullable: true
+ *                   minimum: 1
+ *                   maximum: 120
+ *             updatedBy:
+ *               type: string
+ *               nullable: true
+ *               description: ID користувача, який востаннє змінював налаштування
+ *
+ *     SystemSettingsUpdate:
+ *       type: object
+ *       description: Часткове оновлення SystemSettings (мінімум одне поле)
+ *       minProperties: 1
+ *       properties:
+ *         workHours:
+ *           type: object
+ *           required: [start, end]
+ *           properties:
+ *             start: { type: string, example: "08:00" }
+ *             end:   { type: string, example: "17:00" }
+ *         workDays:
+ *           type: array
+ *           items: { type: integer, minimum: 0, maximum: 6 }
+ *         slotDurationMinutes: { type: integer, minimum: 5, maximum: 240 }
+ *         holidays:
+ *           type: array
+ *           items: { type: string, format: date-time }
+ *         email: { type: object }
+ *         messaging: { type: object }
+ *         retention: { type: object }
  */

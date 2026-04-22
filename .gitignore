@@ -2,6 +2,9 @@
 .DS_Store
 .idea
 
+# AdminJS build output
+.adminjs/
+
 # Logs
 logs
 *.log
