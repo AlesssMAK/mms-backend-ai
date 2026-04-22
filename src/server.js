@@ -19,8 +19,10 @@ import historyFaultRoutes from './routes/historyFaultRoutes.js';
 import generatorsRoute from './routes/generatorsRoute.js';
 import faultRoutes from './routes/faultRoutes.js';
 import systemSettingsRoutes from './routes/systemSettingsRoutes.js';
+import auditLogRoutes from './routes/auditLogRoutes.js';
 import { authenticate } from './middleware/authenticate.js';
 import { ensureSingleton as ensureSystemSettings } from './services/systemSettings.js';
+import { ensureTtlIndex as ensureAuditTtlIndex } from './services/auditLog.js';
 import AdminJS from 'adminjs';
 import AdminJSExpress from '@adminjs/express';
 import { adminOptions } from './admin/admin.config.js';
@@ -99,12 +101,14 @@ app.use(historyFaultRoutes);
 app.use(generatorsRoute);
 app.use(faultRoutes);
 app.use(systemSettingsRoutes);
+app.use(auditLogRoutes);
 app.use(notFoundHandler);
 app.use(errors());
 app.use(errorHandler);
 
 await connectMongoDB();
 await ensureSystemSettings();
+await ensureAuditTtlIndex();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

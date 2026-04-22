@@ -409,6 +409,89 @@
  *               nullable: true
  *               description: ID користувача, який востаннє змінював налаштування
  *
+ *     AuditLog:
+ *       type: object
+ *       description: Запис журналу аудиту. Записи створюються автоматично через middleware/service; REST API надає лише читання.
+ *       properties:
+ *         _id:
+ *           type: string
+ *           example: "65d4f2a1b9a1c2a1a1234567"
+ *         actorId:
+ *           type: string
+ *           nullable: true
+ *           description: ID користувача-ініціатора. null для system/cron подій.
+ *           example: "65c12f8a9e1b2c0012a3b111"
+ *         actorRole:
+ *           type: string
+ *           enum: [operator, admin, manager, maintenanceWorker, safety, system]
+ *           example: admin
+ *         action:
+ *           type: string
+ *           enum:
+ *             - auth.login
+ *             - auth.logout
+ *             - auth.refresh
+ *             - auth.register
+ *             - user.create
+ *             - user.update
+ *             - user.delete
+ *             - user.verify
+ *             - plant.create
+ *             - plant.update
+ *             - plant.delete
+ *             - part.create
+ *             - part.update
+ *             - part.delete
+ *             - fault.create
+ *             - fault.update
+ *             - fault.delete
+ *             - fault.statusChange
+ *             - fault.assign
+ *             - fault.verify
+ *             - comment.create
+ *             - comment.delete
+ *             - settings.update
+ *             - message.create
+ *             - message.broadcast
+ *             - cron.reschedule
+ *             - cron.markOverdue
+ *         targetType:
+ *           type: string
+ *           nullable: true
+ *           enum: [User, Plant, PartPlant, Fault, Comment, SystemSettings, Session, Message]
+ *         targetId:
+ *           type: string
+ *           nullable: true
+ *         summary:
+ *           type: string
+ *           maxLength: 500
+ *           example: "Fault #FAULT-2026-042 assigned to 2 maintainers"
+ *         meta:
+ *           type: object
+ *           nullable: true
+ *           description: Вільна структура з diff/контекстом. Чутливі ключі (password, *Token, secret, ...) редактяться як "[Redacted]".
+ *         ip:
+ *           type: string
+ *           nullable: true
+ *         userAgent:
+ *           type: string
+ *           nullable: true
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *
+ *     AuditLogList:
+ *       type: object
+ *       properties:
+ *         page: { type: integer, example: 1 }
+ *         perPage: { type: integer, example: 20 }
+ *         total: { type: integer, example: 135 }
+ *         totalPages: { type: integer, example: 7 }
+ *         items:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/AuditLog'
+ *
  *     SystemSettingsUpdate:
  *       type: object
  *       description: Часткове оновлення SystemSettings (мінімум одне поле)
