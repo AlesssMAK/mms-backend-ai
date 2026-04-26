@@ -2,6 +2,8 @@ import { Fault } from '../models/fault.js';
 import { User } from '../models/user.js';
 import mongoose from 'mongoose';
 import { emitFaultUpdated } from '../socket/emitters.js';
+import { sendAssignmentEmail } from '../services/email/index.js';
+import { USER_STATUS } from '../constants/status.js';
 
 export const addFault = async (req, res) => {
   try {
@@ -78,8 +80,24 @@ export const addFault = async (req, res) => {
     await fault.save();
 
     await fault.populate('assignedMaintainers', 'name');
+    await fault.populate({ path: 'plantId', select: 'namePlant code' });
+    await fault.populate({ path: 'partId', select: 'namePlantPart codePlantPart' });
 
     emitFaultUpdated(fault);
+
+    setImmediate(async () => {
+      try {
+        const recipients = await User.find({
+          _id: { $in: assignedMaintainers },
+          status: USER_STATUS.ACTIVE,
+        })
+          .select('email fullName')
+          .lean();
+        await sendAssignmentEmail(fault, recipients);
+      } catch (err) {
+        console.error('[email] post-assignment dispatch failed', err.message);
+      }
+    });
 
     return res.status(200).json(fault);
   } catch (error) {
