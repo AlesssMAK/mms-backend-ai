@@ -1,0 +1,37 @@
+# Dev infra for MMS backend.
+# Backend (Node) runs locally via `npm run dev`; this file boots only Mongo + MailPit.
+# Usage:
+#   docker compose up -d         # start
+#   docker compose down          # stop (data persists in named volume)
+#   docker compose down -v       # stop + wipe Mongo data
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: mms-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mms_mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mms-mailpit
+    restart: unless-stopped
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # Web UI -> http://localhost:8025
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+volumes:
+  mms_mongo_data:
