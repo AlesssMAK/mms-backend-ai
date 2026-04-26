@@ -1,10 +1,23 @@
 import { model, Schema } from 'mongoose';
+import { DateTime } from 'luxon';
 
 const HH_MM_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+const isValidIanaZone = (tz) => DateTime.local().setZone(tz).isValid;
 
 const systemSettingsSchema = new Schema(
   {
     _id: { type: String, default: 'global' },
+
+    timezone: {
+      type: String,
+      required: true,
+      default: 'Europe/Rome',
+      validate: {
+        validator: isValidIanaZone,
+        message: (props) => `${props.value} is not a valid IANA timezone`,
+      },
+    },
 
     workHours: {
       start: {

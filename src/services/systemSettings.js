@@ -8,6 +8,7 @@ let cached = null;
 
 const PUBLIC_FIELDS = [
   '_id',
+  'timezone',
   'workHours',
   'workDays',
   'slotDurationMinutes',
@@ -18,6 +19,11 @@ const PUBLIC_FIELDS = [
 export const ensureSingleton = async () => {
   const existing = await SystemSettings.findById(SYSTEM_SETTINGS_ID);
   if (existing) {
+    if (!existing.timezone) {
+      existing.timezone = systemSettingsDefaults.timezone;
+      await existing.save();
+      console.log(`✅ SystemSettings backfilled timezone='${existing.timezone}'`);
+    }
     cached = existing.toObject();
     console.log('✅ SystemSettings loaded');
     return cached;

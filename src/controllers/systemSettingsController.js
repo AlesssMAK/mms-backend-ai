@@ -7,6 +7,7 @@ import {
   toPublicView,
 } from '../services/systemSettings.js';
 import { ensureTtlIndex as ensureAuditTtlIndex } from '../services/auditLog.js';
+import { reloadCronJobs } from '../cron/index.js';
 
 export const getPublicSettings = async (req, res) => {
   const settings = await getSettings();
@@ -36,6 +37,12 @@ export const updateSettings = async (req, res) => {
   if (req.body?.retention?.auditLogDays !== undefined) {
     ensureAuditTtlIndex().catch((err) =>
       console.error('[auditLog] ensureTtlIndex after settings update failed', err.message),
+    );
+  }
+
+  if (req.body?.timezone !== undefined) {
+    reloadCronJobs().catch((err) =>
+      console.error('[cron] reload after settings update failed', err.message),
     );
   }
 

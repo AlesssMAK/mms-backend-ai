@@ -1,6 +1,7 @@
 export const SYSTEM_SETTINGS_ID = 'global';
 
 export const systemSettingsDefaults = {
+  timezone: 'Europe/Rome',
   workHours: {
     start: '08:00',
     end: '17:00',

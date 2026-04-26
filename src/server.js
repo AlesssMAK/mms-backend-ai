@@ -25,6 +25,7 @@ import { authenticate } from './middleware/authenticate.js';
 import { ensureSingleton as ensureSystemSettings } from './services/systemSettings.js';
 import { ensureTtlIndex as ensureAuditTtlIndex } from './services/auditLog.js';
 import { initSocket } from './socket/index.js';
+import { startCronJobs, stopCronJobs } from './cron/index.js';
 import AdminJS from 'adminjs';
 import AdminJSExpress from '@adminjs/express';
 import { adminOptions } from './admin/admin.config.js';
@@ -111,6 +112,7 @@ app.use(errorHandler);
 await connectMongoDB();
 await ensureSystemSettings();
 await ensureAuditTtlIndex();
+await startCronJobs();
 
 const httpServer = http.createServer(app);
 initSocket(httpServer);
@@ -118,3 +120,11 @@ initSocket(httpServer);
 httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+const shutdown = (signal) => {
+  console.log(`Received ${signal}, shutting down…`);
+  stopCronJobs();
+  httpServer.close(() => process.exit(0));
+};
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
