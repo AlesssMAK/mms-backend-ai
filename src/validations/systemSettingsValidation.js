@@ -40,6 +40,9 @@ const retentionSchema = Joi.object({
 
 export const updateSystemSettingsSchema = {
   [Segments.BODY]: Joi.object({
+    // IANA tz identifier (e.g. Europe/Rome). Loose pattern — luxon
+    // re-validates inside ensureSingleton/save hooks.
+    timezone: Joi.string().trim().pattern(/^[A-Za-z][A-Za-z0-9_+-]*\/[A-Za-z][A-Za-z0-9_+-]*$/),
     workHours: workHoursSchema,
     workDays: Joi.array()
       .items(Joi.number().integer().min(0).max(6))

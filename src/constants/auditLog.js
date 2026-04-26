@@ -23,6 +23,8 @@ export const AUDIT_ACTIONS = [
   'fault.statusChange',
   'fault.assign',
   'fault.verify',
+  'fault.auto_overdue',
+  'fault.auto_replanned',
 
   'comment.create',
   'comment.delete',

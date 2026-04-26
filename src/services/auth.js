@@ -17,25 +17,20 @@ export const createSession = async (userId) => {
   });
 };
 export const setSessionCookies = (res, session) => {
-  res.cookie('accessToken', session.accessToken, {
+  // secure+sameSite='none' is required for the cross-origin frontend in
+  // production (HTTPS) but breaks plain-HTTP dev/staging and integration
+  // tests — cookies with secure=true are dropped on http://. Mirror the
+  // isProd-aware behaviour already used by clearSessionCookies.
+  const cookieOpts = (maxAge) => ({
     httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    maxAge: FIFTEEN_MINUTES,
-  });
-  res.cookie('refreshToken', session.refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    maxAge: THIRTY_DAYS,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+    maxAge,
   });
 
-  res.cookie('sessionId', session._id, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    maxAge: THIRTY_DAYS,
-  });
+  res.cookie('accessToken', session.accessToken, cookieOpts(FIFTEEN_MINUTES));
+  res.cookie('refreshToken', session.refreshToken, cookieOpts(THIRTY_DAYS));
+  res.cookie('sessionId', session._id, cookieOpts(THIRTY_DAYS));
 };
 export const clearSessionCookies = (res) => {
   const cookieOptions = { httpOnly: true, path: '/' };
