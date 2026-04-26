@@ -93,7 +93,15 @@ export const ensureTtlIndex = async () => {
   const expireAfterSeconds = days * 24 * 60 * 60;
 
   const coll = AuditLog.collection;
-  const indexes = await coll.indexes();
+  // On a fresh DB the collection does not exist yet; Mongo 7 throws
+  // NamespaceNotFound from listIndexes. Treat that as "no indexes yet" —
+  // createIndex below will create the collection and the TTL index.
+  let indexes = [];
+  try {
+    indexes = await coll.indexes();
+  } catch (err) {
+    if (err?.codeName !== 'NamespaceNotFound') throw err;
+  }
   const existing = indexes.find((i) => i.name === AUDIT_TTL_INDEX_NAME);
 
   if (existing && existing.expireAfterSeconds !== expireAfterSeconds) {
