@@ -1,10 +1,17 @@
 import createHttpError from 'http-errors';
 import { Fault } from '../models/fault.js';
 import { Plant } from '../models/plant.js';
+import { User } from '../models/user.js';
 import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 import mongoose from 'mongoose';
 import { PlantPart } from '../models/part.js';
 import { emitFaultCreated } from '../socket/emitters.js';
+import {
+  sendNewFaultEmail,
+  sendSicurezzaHseEmail,
+} from '../services/email/index.js';
+import { TYPE_FAULT } from '../constants/typeFault.js';
+import { USER_STATUS } from '../constants/status.js';
 
 export const createFault = async (req, res) => {
   const {
@@ -84,6 +91,30 @@ export const createFault = async (req, res) => {
     .insertOne(newFault.toObject());
 
   emitFaultCreated(populatedFault);
+
+  setImmediate(async () => {
+    try {
+      const managers = await User.find({
+        role: 'manager',
+        status: USER_STATUS.ACTIVE,
+      })
+        .select('email fullName')
+        .lean();
+      await sendNewFaultEmail(populatedFault, managers);
+
+      if (populatedFault.typeFault === TYPE_FAULT.SAFETY) {
+        const hseUsers = await User.find({
+          role: 'safety',
+          status: USER_STATUS.ACTIVE,
+        })
+          .select('email fullName')
+          .lean();
+        await sendSicurezzaHseEmail(populatedFault, hseUsers);
+      }
+    } catch (err) {
+      console.error('[email] post-create dispatch failed', err.message);
+    }
+  });
 
   return res.status(201).json(populatedFault);
 };
