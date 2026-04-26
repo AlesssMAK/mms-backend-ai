@@ -31,6 +31,7 @@ export const AUDIT_ACTIONS = [
 
   'message.create',
   'message.broadcast',
+  'message.delete',
 
   'cron.reschedule',
   'cron.markOverdue',

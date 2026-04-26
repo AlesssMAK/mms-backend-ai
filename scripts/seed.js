@@ -9,11 +9,14 @@ import { User } from '../src/models/user.js';
 import { Plant } from '../src/models/plant.js';
 import { PlantPart } from '../src/models/part.js';
 import { Fault } from '../src/models/fault.js';
+import { Message } from '../src/models/message.js';
 
 import { USER_STATUS } from '../src/constants/status.js';
 import { TYPE_FAULT } from '../src/constants/typeFault.js';
 import { STATUS_FAULT } from '../src/constants/statusFault.js';
 import { TYPE_PRIORITY } from '../src/constants/typePriority.js';
+import { MESSAGE_TYPE } from '../src/constants/message.js';
+import { computeBroadcastExpireAt } from '../src/services/message.js';
 
 if (process.env.NODE_ENV === 'production') {
   console.error('❌ Refusing to seed: NODE_ENV=production');
@@ -190,6 +193,29 @@ const main = async () => {
     assignedMaintainers: [worker._id],
     managerId: manager._id,
     commentMaintenanceWorker: 'Sostituzione completata, livello OK',
+  });
+
+  console.log('🌱 Seeding messages…');
+  // Idempotent fixtures: upsert by a stable seedKey stored in subject prefix.
+  // We just delete previous fixtures and recreate (cheap, only 2 docs).
+  await Message.deleteMany({ subject: { $regex: /^\[seed\]/ } });
+  await Message.create({
+    type: MESSAGE_TYPE.BROADCAST_ALL,
+    authorId: admin._id,
+    authorName: admin.fullName,
+    authorRole: admin.role,
+    subject: '[seed] Benvenuti nel sistema MMS',
+    body: 'Questo è un annuncio di esempio visibile a tutti gli utenti.',
+    expireAt: computeBroadcastExpireAt(30),
+  });
+  await Message.create({
+    type: MESSAGE_TYPE.DIRECT,
+    authorId: manager._id,
+    authorName: manager.fullName,
+    authorRole: manager.role,
+    recipientId: worker._id,
+    subject: '[seed] Promemoria intervento',
+    body: 'Ciao Luigi, ricordati di controllare il riduttore della linea EXT-1.',
   });
 
   console.log('\n✅ Seed completed.\n');
