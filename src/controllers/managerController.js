@@ -1,6 +1,7 @@
 import { Fault } from '../models/fault.js';
 import { User } from '../models/user.js';
 import mongoose from 'mongoose';
+import { emitFaultUpdated } from '../socket/emitters.js';
 
 export const addFault = async (req, res) => {
   try {
@@ -77,6 +78,8 @@ export const addFault = async (req, res) => {
     await fault.save();
 
     await fault.populate('assignedMaintainers', 'name');
+
+    emitFaultUpdated(fault);
 
     return res.status(200).json(fault);
   } catch (error) {

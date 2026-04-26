@@ -4,6 +4,7 @@ import { Plant } from '../models/plant.js';
 import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 import mongoose from 'mongoose';
 import { PlantPart } from '../models/part.js';
+import { emitFaultCreated } from '../socket/emitters.js';
 
 export const createFault = async (req, res) => {
   const {
@@ -81,6 +82,8 @@ export const createFault = async (req, res) => {
   await mongoose.connection
     .collection('original_faults')
     .insertOne(newFault.toObject());
+
+  emitFaultCreated(populatedFault);
 
   return res.status(201).json(populatedFault);
 };

@@ -1,5 +1,9 @@
 import { Fault } from '../models/fault.js';
 import { User } from '../models/user.js';
+import {
+  emitFaultStatusChanged,
+  emitFaultUpdated,
+} from '../socket/emitters.js';
 
 export const getAllMaintenanceWorker = async (req, res) => {
   const maintenanceWorker = await User.find({
@@ -14,7 +18,7 @@ export const getAllMaintenanceWorker = async (req, res) => {
 
 export const addFaultByMaintenanceWorker = async (req, res) => {
   try {
-    const { faultId, statusfault, commentMaintenanceWorker } = req.body;
+    const { faultId, statusFault, commentMaintenanceWorker } = req.body;
     const maintenanceWorkerId = req.user?._id;
     const maintenanceWorkerName = req.user?.name || 'Монтер';
     const fault = await Fault.findById(faultId);
@@ -23,9 +27,11 @@ export const addFaultByMaintenanceWorker = async (req, res) => {
       return res.status(404).json({ message: 'Несправність не знайдена' });
     }
 
+    const previousStatus = fault.statusFault;
+
     const updateData = {
       faultId,
-      statusfault,
+      statusFault,
       commentMaintenanceWorker,
       maintenanceWorkerId,
     };
@@ -40,6 +46,16 @@ export const addFaultByMaintenanceWorker = async (req, res) => {
     Object.assign(fault, updateData);
 
     await fault.save();
+
+    emitFaultUpdated(fault);
+    if (statusFault && statusFault !== previousStatus) {
+      emitFaultStatusChanged(fault._id, {
+        from: previousStatus,
+        to: fault.statusFault,
+        userId: maintenanceWorkerId,
+      });
+    }
+
     return res.status(200).json(fault);
   } catch (error) {
     return res.status(500).json({
