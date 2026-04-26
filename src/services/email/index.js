@@ -13,6 +13,10 @@ const subjectFor = (template, ctx) => {
       return `Nuovo intervento assegnato: ${ctx.faultId}`;
     case 'sicurezzaHse':
       return `[SICUREZZA] Nuova segnalazione: ${ctx.faultId}`;
+    case 'directMessage':
+      return ctx.subject
+        ? `[MMS] ${ctx.subject}`
+        : `Nuovo messaggio da ${ctx.authorName ?? 'MMS'}`;
     default:
       return `MMS: ${ctx.faultId ?? ''}`.trim();
   }
@@ -98,6 +102,26 @@ export const sendSicurezzaHseEmail = async (fault, hseUsers) => {
     contextFor: () => ({
       ...baseFaultContext(fault),
       link: buildLink('safety', fault._id),
+    }),
+  });
+};
+
+export const sendDirectMessageEmail = async (message, recipient) => {
+  const gate = await guard('onDirectMessage');
+  if (!gate.ok) return { skipped: true, reason: gate.reason };
+  if (!recipient?.email) return { skipped: true, reason: 'no_recipient_email' };
+
+  return sendBulk({
+    recipients: [recipient],
+    template: 'directMessage',
+    from: gate.settings.email.from,
+    contextFor: () => ({
+      recipientName: recipient.fullName ?? '',
+      authorName: message.authorName ?? '',
+      authorRole: message.authorRole ?? '',
+      subject: message.subject ?? '',
+      body: message.body ?? '',
+      link: `${FRONTEND_URL()}/inbox/${message.authorId}`,
     }),
   });
 };

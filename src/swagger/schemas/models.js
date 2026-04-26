@@ -513,4 +513,53 @@
  *         email: { type: object }
  *         messaging: { type: object }
  *         retention: { type: object }
+ *
+ *     Message:
+ *       type: object
+ *       required: [type, authorId, authorName, authorRole, body]
+ *       properties:
+ *         _id: { type: string }
+ *         type:
+ *           type: string
+ *           enum: [direct, broadcast_all, broadcast_role]
+ *         authorId: { type: string, description: User _id }
+ *         authorName: { type: string, example: "Mario Manager" }
+ *         authorRole:
+ *           type: string
+ *           enum: [operator, admin, manager, maintenanceWorker, safety]
+ *         recipientId:
+ *           type: string
+ *           nullable: true
+ *           description: Required for direct, null for broadcasts
+ *         targetRole:
+ *           type: string
+ *           nullable: true
+ *           enum: [operator, admin, manager, maintenanceWorker, safety, null]
+ *           description: Required for broadcast_role, null otherwise
+ *         subject: { type: string, maxLength: 200 }
+ *         body: { type: string, minLength: 1, maxLength: 5000 }
+ *         readBy:
+ *           type: array
+ *           items: { type: string, description: User _id }
+ *         expireAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           description: |
+ *             Set only on broadcasts (now + SystemSettings.messaging.broadcastTtlDays).
+ *             Direct messages keep null and are never auto-expired.
+ *         createdAt: { type: string, format: date-time }
+ *         updatedAt: { type: string, format: date-time }
+ *
+ *     MessageList:
+ *       type: object
+ *       properties:
+ *         page: { type: integer, example: 1 }
+ *         perPage: { type: integer, example: 20 }
+ *         total: { type: integer, example: 42 }
+ *         totalPages: { type: integer, example: 3 }
+ *         items:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Message'
  */

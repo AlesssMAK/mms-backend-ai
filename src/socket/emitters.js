@@ -59,3 +59,36 @@ export const emitToUser = (userId, event, payload) =>
 
 export const emitBroadcast = (event, payload) =>
   safeEmit((io) => io.to(BROADCAST_ROOM), event, payload);
+
+/**
+ * Fan-out a Message to the right rooms based on its type:
+ *   - direct          → user:<recipientId>
+ *   - broadcast_role  → role:<targetRole>
+ *   - broadcast_all   → broadcast:all
+ * Also echoed to the author's own user room so the sender's other
+ * tabs/devices see the message immediately.
+ */
+export const emitMessageNew = (message) => {
+  const authorRoom = (io) => io.to(userRoom(String(message.authorId)));
+
+  if (message.type === 'direct') {
+    return safeEmit(
+      (io) => authorRoom(io).to(userRoom(String(message.recipientId))),
+      'message:new',
+      message,
+    );
+  }
+  if (message.type === 'broadcast_role') {
+    return safeEmit(
+      (io) => authorRoom(io).to(roleRoom(message.targetRole)),
+      'message:new',
+      message,
+    );
+  }
+  // broadcast_all
+  return safeEmit(
+    (io) => authorRoom(io).to(BROADCAST_ROOM),
+    'message:new',
+    message,
+  );
+};

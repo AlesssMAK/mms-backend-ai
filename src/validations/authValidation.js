@@ -18,7 +18,7 @@ export const registerUserSchema = {
           'Full name must contain at least two words and only letters',
       }),
 
-    email: Joi.string().email().required(),
+    email: Joi.string().email({ tlds: { allow: false } }).required(),
 
     // password тільки для НЕ операторів
     password: Joi.when('role', {
@@ -68,7 +68,7 @@ export const loginUserSchema = {
 
     // Логін для інших ролей (email + password)
     Joi.object({
-      email: Joi.string().email().required(),
+      email: Joi.string().email({ tlds: { allow: false } }).required(),
       password: Joi.string().required(),
     }),
   ),
