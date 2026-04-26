@@ -60,12 +60,14 @@ const upsertPart = async ({ codePlantPart, plantId, namePlantPart }) =>
     { upsert: true, new: true, setDefaultsOnInsert: true },
   );
 
-const upsertFault = async (data) =>
-  Fault.findOneAndUpdate(
-    { faultId: data.faultId },
-    { $set: data, $setOnInsert: { faultId: data.faultId } },
+const upsertFault = async (data) => {
+  const { faultId, ...rest } = data;
+  return Fault.findOneAndUpdate(
+    { faultId },
+    { $set: rest, $setOnInsert: { faultId } },
     { upsert: true, new: true, setDefaultsOnInsert: true },
   );
+};
 
 const main = async () => {
   await connectMongoDB();
