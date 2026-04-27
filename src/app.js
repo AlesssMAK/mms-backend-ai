@@ -47,9 +47,16 @@ export const buildApp = ({ withAdmin = true, withSwagger = true } = {}) => {
   app.use(helmet());
   app.use(logger);
   app.use(express.json());
+  // CORS origins come from FRONTEND_URL (comma-separated allowed). The old
+  // hard-coded value 'https://http://localhost:3000/' was not a valid URL
+  // and would have rejected every browser preflight in production.
+  const corsOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:3000')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   app.use(
     cors({
-      origin: ['https://http://localhost:3000/'],
+      origin: corsOrigins,
       credentials: true,
     }),
   );
