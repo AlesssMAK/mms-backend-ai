@@ -8,6 +8,11 @@ export default defineConfig({
     // Each test file gets its own Mongoose connection state, so we need
     // serial-per-file isolation. Threads pool is fine (Vitest 4 default).
     pool: 'threads',
+    // Run test files one at a time. Each file boots its own
+    // mongodb-memory-server instance and several files starting in
+    // parallel race on the shared mongod binary, producing ETXTBSY
+    // on Linux CI runners. Inside a file tests still run concurrently.
+    fileParallelism: false,
 
     // mongodb-memory-server downloads a binary on first run; allow plenty.
     testTimeout: 30_000,
