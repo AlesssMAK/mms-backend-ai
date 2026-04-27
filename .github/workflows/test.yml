@@ -8,7 +8,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Pinned to 22.04 (Jammy) because mongodb-memory-server downloads
+    # MongoDB binaries from official mongodb.org distribution and there
+    # are no published binaries for Ubuntu 24.04 (Noble) — the auto-
+    # detection on ubuntu-latest fails before any test runs.
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
 
     steps:
